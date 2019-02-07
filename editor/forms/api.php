@@ -6,6 +6,11 @@
  * Time: 4:56 PM
  */
 
+/**
+ * @todo: Implement abstract api class
+ *
+ * Class Brizy_Editor_Forms_Api
+ */
 class Brizy_Editor_Forms_Api {
 
 	const AJAX_GET_FORM = 'brizy_get_form';

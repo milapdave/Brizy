@@ -9,6 +9,7 @@
 abstract class Brizy_Editor_Accounts_AbstractAccount extends Brizy_Admin_Serializable {
 
 	const INTEGRATIONS_GROUP = 'form-integration';
+	const SOCIAL_GROUP = 'social';
 
 
 	use Brizy_Editor_Forms_DynamicPropsAware;
@@ -62,7 +63,7 @@ abstract class Brizy_Editor_Accounts_AbstractAccount extends Brizy_Admin_Seriali
 			if ( $key == 'id' ) {
 				continue;
 			}
-			if ( !isset($aData[ $key ]) || $aData[ $key ] != $val ) {
+			if ( ! isset( $aData[ $key ] ) || $aData[ $key ] != $val ) {
 				return false;
 			}
 		}
@@ -134,7 +135,8 @@ abstract class Brizy_Editor_Accounts_AbstractAccount extends Brizy_Admin_Seriali
 
 		if ( isset( $data['group'] ) )
 			switch ( $data['group'] ) {
-				default:
+				case self::SOCIAL_GROUP:
+					return new Brizy_Editor_Accounts_SocialAccount( $data );
 				case self::INTEGRATIONS_GROUP:
 					return new Brizy_Editor_Accounts_Account( $data );
 			}
