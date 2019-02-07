@@ -137,6 +137,7 @@ abstract class Brizy_Editor_Accounts_AbstractAccount extends Brizy_Admin_Seriali
 			switch ( $data['group'] ) {
 				case self::SOCIAL_GROUP:
 					return new Brizy_Editor_Accounts_SocialAccount( $data );
+				default:
 				case self::INTEGRATIONS_GROUP:
 					return new Brizy_Editor_Accounts_Account( $data );
 			}
