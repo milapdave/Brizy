@@ -237,6 +237,15 @@ class Brizy_Editor_Editor_Editor {
 			'menuData'        => $this->get_menu_data()
 		);
 
+		$manager  = new Brizy_Editor_Accounts_ServiceAccountManager( Brizy_Editor_Project::get() );
+		$accounts = $manager->getAccountsByGroup( Brizy_Editor_Accounts_AbstractAccount::SOCIAL_GROUP );
+
+		foreach ( $accounts as $account ) {
+			if ( isset( $account ) && $account instanceof Brizy_Editor_Accounts_SocialAccount ) {
+				$config['applications'][ $account->getGroup() ][] = $account->convertToOptionValue();
+			}
+		}
+
 		return self::$config = apply_filters( 'brizy_editor_config', $config );
 	}
 
