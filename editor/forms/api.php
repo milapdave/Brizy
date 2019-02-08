@@ -7,7 +7,7 @@
  */
 
 /**
- * @todo: Implement abstract api class
+ * @todo: Implement Brizy_Admin_AbstractApi here
  *
  * Class Brizy_Editor_Forms_Api
  */
@@ -22,6 +22,12 @@ class Brizy_Editor_Forms_Api {
 	const AJAX_CREATE_INTEGRATION = 'brizy_create_integration';
 	const AJAX_UPDATE_INTEGRATION = 'brizy_update_integration';
 	const AJAX_DELETE_INTEGRATION = 'brizy_delete_integration';
+
+	const AJAX_SET_RECAPTCHA_ACCOUNT = 'brizy_set_recaptcha_account';
+	const AJAX_GET_RECAPTCHA_ACCOUNT = 'brizy_get_recaptcha_account';
+	const AJAX_DELETE_RECAPTCHA_ACCOUNT = 'brizy_delete_recaptcha_account';
+	const AJAX_VALIDATE_RECAPTCHA_ACCOUNT = 'brizy_validate_recaptcha_account';
+
 
 	const AJAX_AUTHENTICATION_CALLBACK = 'brizy_authentication_callback';
 
@@ -74,6 +80,12 @@ class Brizy_Editor_Forms_Api {
 			add_action( 'wp_ajax_' . self::AJAX_GET_INTEGRATION, array( $this, 'getIntegration' ) );
 			add_action( 'wp_ajax_' . self::AJAX_UPDATE_INTEGRATION, array( $this, 'updateIntegration' ) );
 			add_action( 'wp_ajax_' . self::AJAX_DELETE_INTEGRATION, array( $this, 'deleteIntegration' ) );
+
+			add_action( 'wp_ajax_' . self::AJAX_VALIDATE_RECAPTCHA_ACCOUNT, array(
+				$this,
+				'validateRecaptchaAccount'
+			) );
+
 		}
 
 		add_action( 'wp_ajax_' . self::AJAX_SUBMIT_FORM, array( $this, 'submit_form' ) );
@@ -84,13 +96,50 @@ class Brizy_Editor_Forms_Api {
 		wp_send_json_error( array( 'code' => $code, 'message' => $message ), $code );
 	}
 
-	protected function success( $data ) {
-		wp_send_json_success( $data );
+	protected function success( $data, $code = 200 ) {
+		wp_send_json_success( $data, $code );
 	}
 
 	private function authorize() {
 		if ( ! wp_verify_nonce( $_REQUEST['hash'], Brizy_Editor_API::nonce ) ) {
 			wp_send_json_error( array( 'code' => 400, 'message' => 'Bad request' ), 400 );
+		}
+	}
+
+	public function validateRecaptchaAccount() {
+		$this->authorize();
+		try {
+
+			if ( ! isset( $_REQUEST['secretKey'] ) ) {
+				$this->error( 400, 'Invalid secret provided' );
+			}
+
+			if ( ! isset( $_REQUEST['response'] ) ) {
+				$this->error( 400, 'Invalid response provided' );
+			}
+
+			$http     = new WP_Http();
+			$response = $http->post( 'https://www.google.com/recaptcha/api/siteverify', array(
+				'body' => array(
+					'secret'   => $_REQUEST['secretKey'],
+					'response' => $_REQUEST['response']
+				)
+			) );
+
+			$body = wp_remote_retrieve_body( $response );
+
+			$responseJsonObject = json_decode( $body );
+
+			if ( ! is_object( $responseJsonObject ) || ! $responseJsonObject->success ) {
+				$this->error( 400, "Unable to validation request" );
+			}
+
+			$this->success( null );
+
+		} catch ( Exception $exception ) {
+			Brizy_Logger::instance()->exception( $exception );
+			$this->error( $exception->getCode(), $exception->getMessage() );
+			exit;
 		}
 	}
 
@@ -125,7 +174,7 @@ class Brizy_Editor_Forms_Api {
 
 			if ( $validation_result === true ) {
 				$manager->addForm( $instance );
-				$this->success( $instance );
+				$this->success( $instance, 201 );
 			}
 
 			$this->error( 400, $validation_result );
@@ -154,13 +203,13 @@ class Brizy_Editor_Forms_Api {
 		try {
 			$manager = new Brizy_Editor_Forms_FormManager( Brizy_Editor_Project::get() );
 			/**
-			 * @var Brizy_Editor_FormsCompatibility fix_Form $form ;
+			 * @var Brizy_Editor_Forms_Form $form ;
 			 */
 
 			$form = $manager->getForm( $_REQUEST['form_id'] );
 
 			if ( ! $form ) {
-				$this->error( 400, "Invalid form id" );
+				$this->error( 404, "Form not found" );
 			}
 
 			$fields = json_decode( stripslashes( $_REQUEST['data'] ) );
@@ -169,6 +218,43 @@ class Brizy_Editor_Forms_Api {
 				$this->error( 400, "Invalid form data" );
 			}
 
+			// validtate recaptha response if exists
+
+			$accountManager    = new Brizy_Editor_Accounts_ServiceAccountManager( Brizy_Editor_Project::get() );
+			$recaptchaAccounts = $accountManager->getAccountsByGroup( Brizy_Editor_Accounts_AbstractAccount::RECAPTCHA_GROUP );
+
+			if ( count( $recaptchaAccounts ) > 0 ) {
+				$recaptchaField = null;
+				foreach ( $fields as $field ) {
+					if ( $field->name == 'g-recaptcha-response' ) {
+						$recaptchaField = $field;
+					}
+				}
+
+				if ( ! $recaptchaField ) {
+					Brizy_Logger::instance()->error( "The submitted data is invalid." );
+					$this->error( 400, "The submitted data is invalid." );
+				}
+
+				$recaptchaAccount = $recaptchaAccounts[0];
+
+				$http     = new WP_Http();
+				$response = $http->post( 'https://www.google.com/recaptcha/api/siteverify', array(
+						'body' => array(
+							'secret'   => $recaptchaAccount->get( 'secretKey' ),
+							'response' => $recaptchaField->value
+						)
+					)
+				);
+
+				$body = wp_remote_retrieve_body( $response );
+
+				$responseJsonObject = json_decode( $body );
+
+				if ( ! is_object( $responseJsonObject ) || ! $responseJsonObject->success ) {
+					$this->error( 400, "Unable to validation request" );
+				}
+			}
 
 			$form   = apply_filters( 'brizy_form', $form );
 			$fields = apply_filters( 'brizy_form_submit_data', $fields, $form );
@@ -220,6 +306,7 @@ class Brizy_Editor_Forms_Api {
 
 						do_action( 'brizy_submit_form', $service, $form, $fields, $integration );
 					}
+
 				} catch ( Exception $e ) {
 					Brizy_Logger::instance()->exception( $e );
 					$this->error( 500, 'Member was not created.' );

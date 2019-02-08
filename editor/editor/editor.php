@@ -219,6 +219,9 @@ class Brizy_Editor_Editor_Editor {
 					'addAccount'    => Brizy_Editor_Accounts_Api::BRIZY_ADD_ACCOUNT,
 					'updateAccount' => Brizy_Editor_Accounts_Api::BRIZY_UPDATE_ACCOUNT,
 					'deleteAccount' => Brizy_Editor_Accounts_Api::BRIZY_DELETE_ACCOUNT,
+
+					'validateRecaptchaAccount' => Brizy_Editor_Forms_Api::AJAX_VALIDATE_RECAPTCHA_ACCOUNT,
+
 				),
 				'plugins'         => array(
 					'dummy'       => true,
@@ -227,24 +230,22 @@ class Brizy_Editor_Editor_Editor {
 				'hasSidebars'     => count( $wp_registered_sidebars ) > 0,
 				'l10n'            => Brizy_Languages_Texts::get_editor_texts(),
 				'pageData'        => apply_filters( 'brizy_page_data', array() ),
-				'isTemplate'      => $isTemplate
+				'isTemplate'      => $isTemplate,
 			),
 			'applications'    => array(
 				'form' => array(
 					'submitUrl' => add_query_arg( 'action', 'brizy_submit_form', set_url_scheme( admin_url( 'admin-ajax.php' ) ) )
-				)
+				),
 			),
-			'menuData'        => $this->get_menu_data()
+
+			'menuData' => $this->get_menu_data()
 		);
 
 		$manager  = new Brizy_Editor_Accounts_ServiceAccountManager( Brizy_Editor_Project::get() );
-		$accounts = $manager->getAccountsByGroup( Brizy_Editor_Accounts_AbstractAccount::SOCIAL_GROUP );
 
-		foreach ( $accounts as $account ) {
-			if ( isset( $account ) && $account instanceof Brizy_Editor_Accounts_SocialAccount ) {
-				$config['applications'][ $account->getGroup() ][] = $account->convertToOptionValue();
-			}
-		}
+		$config = $this->addRecaptchaAccounts( $manager, $config );
+
+		$config = $this->addSocialAccounts( $manager, $config );
 
 		return self::$config = apply_filters( 'brizy_editor_config', $config );
 	}
@@ -545,4 +546,38 @@ class Brizy_Editor_Editor_Editor {
 			) )
 		);
 	}
+
+	/**
+	 * @param Brizy_Editor_Accounts_ServiceAccountManager $manager
+	 * @param array $config
+	 *
+	 * @return array
+	 */
+	private function addRecaptchaAccounts( Brizy_Editor_Accounts_ServiceAccountManager $manager, array $config ) {
+		$accounts = $manager->getAccountsByGroup( Brizy_Editor_Accounts_AbstractAccount::RECAPTCHA_GROUP );
+
+		if ( isset( $accounts[0] ) && $accounts[0] instanceof Brizy_Editor_Accounts_RecaptchaAccount ) {
+			$config['applications']['form']['recaptcha']['siteKey'] = $accounts[0]->getSiteKey();
+		}
+
+		return array( $accounts, $config );
+}
+
+	/**
+	 * @param Brizy_Editor_Accounts_ServiceAccountManager $manager
+	 * @param array $config
+	 *
+	 * @return array
+	 */
+	private function addSocialAccounts( Brizy_Editor_Accounts_ServiceAccountManager $manager, array $config ) {
+		$accounts = $manager->getAccountsByGroup( Brizy_Editor_Accounts_AbstractAccount::SOCIAL_GROUP );
+
+		foreach ( $accounts as $account ) {
+			if ( isset( $account ) && $account instanceof Brizy_Editor_Accounts_SocialAccount ) {
+				$config['applications'][ $account->getGroup() ][] = $account->convertToOptionValue();
+			}
+		}
+
+		return $config;
+}
 }

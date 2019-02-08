@@ -6,7 +6,7 @@
  * Time: 3:23 PM
  */
 
-trait Brizy_Editor_Forms_DynamicPropsAware  {
+trait Brizy_Editor_Forms_DynamicPropsAware {
 	/**
 	 * @var string[]
 	 */
@@ -24,7 +24,9 @@ trait Brizy_Editor_Forms_DynamicPropsAware  {
 		$method = substr( $name, 0, 3 );
 		$key    = substr( $name, 3 );
 
-		if(empty($key)) throw new Exception('Invalid key. You method must look like this: setKey();');
+		if ( empty( $key ) ) {
+			throw new Exception( 'Invalid key. You method must look like this: setKey();' );
+		}
 
 		switch ( $method ) {
 			case 'set':

@@ -9,6 +9,7 @@
 abstract class Brizy_Editor_Accounts_AbstractAccount extends Brizy_Admin_Serializable {
 
 	const INTEGRATIONS_GROUP = 'form-integration';
+	const RECAPTCHA_GROUP = 'recaptcha';
 	const SOCIAL_GROUP = 'social';
 
 
@@ -40,16 +41,18 @@ abstract class Brizy_Editor_Accounts_AbstractAccount extends Brizy_Admin_Seriali
 	 */
 	public function __construct( $data = null ) {
 		if ( is_array( $data ) ) {
-			$this->data = $data;
+			foreach ( $data as $key => $val ) {
+				$this->set( $key, $val );
+			}
 		} else {
 			$this->data = array();
 		}
 
 		if ( ! isset( $data['id'] ) ) {
-			$this->data['id'] = md5( time() . rand( 0, 10000 ) );
+			$this->set( 'id', md5( time() . rand( 0, 10000 ) ) );
 		}
 
-		$this->data['group'] = $this->getGroup();
+		$this->set( 'group', $this->getGroup() );
 	}
 
 	/**
@@ -140,6 +143,8 @@ abstract class Brizy_Editor_Accounts_AbstractAccount extends Brizy_Admin_Seriali
 				default:
 				case self::INTEGRATIONS_GROUP:
 					return new Brizy_Editor_Accounts_Account( $data );
+				case self::RECAPTCHA_GROUP:
+					return new Brizy_Editor_Accounts_RecaptchaAccount( $data );
 			}
 
 		throw new Exception( 'Invalid account group.' );

@@ -129,9 +129,9 @@ class Brizy_Editor_Accounts_ServiceAccountManager {
 	}
 
 	/**
-	 * @param Brizy_Editor_Accounts_Account $account
+	 * @param Brizy_Editor_Accounts_AbstractAccount $account
 	 */
-	public function deleteAccount( Brizy_Editor_Accounts_Account $account ) {
+	public function deleteAccount( Brizy_Editor_Accounts_AbstractAccount $account ) {
 
 		$this->deleteAccountById( $account->getId() );
 	}
