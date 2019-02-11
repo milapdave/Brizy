@@ -81,6 +81,8 @@ class Brizy_Editor_Forms_Api {
 			add_action( 'wp_ajax_' . self::AJAX_UPDATE_INTEGRATION, array( $this, 'updateIntegration' ) );
 			add_action( 'wp_ajax_' . self::AJAX_DELETE_INTEGRATION, array( $this, 'deleteIntegration' ) );
 
+			add_filter( 'brizy_form_submit_data', array( $this, 'handleFileTypeFields' ), -100, 2 );
+
 			add_action( 'wp_ajax_' . self::AJAX_VALIDATE_RECAPTCHA_ACCOUNT, array(
 				$this,
 				'validateRecaptchaAccount'
@@ -320,6 +322,54 @@ class Brizy_Editor_Forms_Api {
 			$this->error( $exception->getCode(), $exception->getMessage() );
 			exit;
 		}
+	}
+
+	public function handleFileTypeFields( $fields, $form ) {
+
+		foreach ( $fields as $field ) {
+			if ( $field->type == 'FileUpload' ) {
+				$uFile           = $_FILES[ $field->name ];
+				$uploadOverrides = array( 'test_form' => false );
+
+				$file = wp_handle_upload( $uFile, $uploadOverrides );
+
+				if ( ! $file || isset( $file['error'] ) ) {
+					Brizy_Logger::instance()->error( 'Failed to handle upload', $fields );
+					throw new Exception( 'Failed to handle upload' );
+				}
+
+				// create attachment
+				$wp_upload_dir = wp_upload_dir();
+				$attachment    = array(
+					'guid'           => $wp_upload_dir['url'] . '/' . basename( $file['file'] ),
+					'post_mime_type' => $file['type'],
+					'post_title'     => preg_replace( '/\.[^.]+$/', '', basename( $file['file'] ) ),
+					'post_content'   => '',
+					'post_status'    => 'inherit'
+				);
+
+
+				$attach_id = wp_insert_attachment( $attachment, $file['file'] );
+
+				if ( $attach_id instanceof WP_Error ) {
+					Brizy_Logger::instance()->error( 'Failed to handle upload', $attach_id );
+					throw new Exception( 'Failed to handle upload' );
+				}
+
+				update_post_meta( $attach_id, 'brizy-form-upload', 1 );
+
+				// Make sure that this file is included, as wp_generate_attachment_metadata() depends on it.
+				require_once( ABSPATH . 'wp-admin/includes/image.php' );
+
+				// Generate the metadata for the attachment, and update the database record.
+				$attach_data = wp_generate_attachment_metadata( $attach_id, $file['file'] );
+				wp_update_attachment_metadata( $attach_id, $attach_data );
+
+				$field->value = $file['url'];
+			}
+		}
+
+		return $fields;
 	}
 
 	public function createIntegration() {

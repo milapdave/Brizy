@@ -205,6 +205,7 @@ class Brizy_Admin_FormEntries {
 			'post_status'  => 'publish',
 			'post_content' => json_encode( array( 'formId' => $form->getId(), 'formData' => $fields ) )
 		);
+
 		wp_insert_post( $params );
 
 		return $fields;
