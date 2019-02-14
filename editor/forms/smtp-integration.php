@@ -73,8 +73,14 @@ class Brizy_Editor_Forms_SmtpIntegration extends Brizy_Editor_Forms_WordpressInt
 
 		$get_object_vars = parent::jsonSerialize();
 
-		$get_object_vars['emailTo'] = $this->getEmailTo();
-		$get_object_vars['subject'] = $this->getSubject();
+		$get_object_vars['emailTo']        = $this->getEmailTo();
+		$get_object_vars['subject']        = $this->getSubject();
+		$get_object_vars['host']           = $this->getHost();
+		$get_object_vars['authentication'] = $this->getAuthentication();
+		$get_object_vars['port']           = $this->getPort();
+		$get_object_vars['username']       = $this->getUsername();
+		$get_object_vars['password']       = $this->getPassword();
+		$get_object_vars['encription']     = $this->getEncryption();
 
 		return $get_object_vars;
 	}
