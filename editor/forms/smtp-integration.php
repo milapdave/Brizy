@@ -80,7 +80,7 @@ class Brizy_Editor_Forms_SmtpIntegration extends Brizy_Editor_Forms_WordpressInt
 		$get_object_vars['port']           = $this->getPort();
 		$get_object_vars['username']       = $this->getUsername();
 		$get_object_vars['password']       = $this->getPassword();
-		$get_object_vars['encription']     = $this->getEncryption();
+		$get_object_vars['encryption']     = $this->getEncryption();
 
 		return $get_object_vars;
 	}
