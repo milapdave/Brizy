@@ -54,7 +54,7 @@ class Brizy_Editor_Forms_SmtpIntegration extends Brizy_Editor_Forms_WordpressInt
 	public function handleSubmit( $fields ) {
 		add_action( 'phpmailer_init', array( $this, 'decoratePhpMailer' ) );
 
-		parent::handleSubmit( $fields );
+		return parent::handleSubmit( $fields );
 	}
 
 	public function decoratePhpMailer( $phpmailer ) {
@@ -117,8 +117,8 @@ class Brizy_Editor_Forms_SmtpIntegration extends Brizy_Editor_Forms_WordpressInt
 			if ( isset( $json_obj->password ) ) {
 				$instance->setPassword( $json_obj->password );
 			}
-			if ( isset( $json_obj->encription ) ) {
-				$instance->setEncryption( $json_obj->encription );
+			if ( isset( $json_obj->encryption ) ) {
+				$instance->setEncryption( $json_obj->encryption );
 			}
 		}
 

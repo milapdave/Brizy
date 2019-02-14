@@ -56,7 +56,6 @@ class Brizy_Editor_Forms_WordpressIntegration extends Brizy_Editor_Forms_Abstrac
 			$email_body,
 			$headers
 		);
-
 	}
 
 	/**

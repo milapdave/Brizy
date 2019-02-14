@@ -266,7 +266,7 @@ class Brizy_Editor_Forms_Api {
 					if ( ! $integration->isCompleted() ) {
 						continue;
 					}
-					$integration->execute( $fields );
+					$integration->handleSubmit( $fields );
 				} catch ( Exception $e ) {
 					Brizy_Logger::instance()->exception( $e );
 					$this->error( 500, 'Member was not created.' );
