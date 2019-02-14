@@ -91,7 +91,7 @@ abstract class Brizy_Editor_Forms_AbstractIntegration extends Brizy_Admin_Serial
 						$instance = Brizy_Editor_Forms_SmtpIntegration::createFromJson( $json_obj );
 					}
 					break;
-				case 'gmail-smtp':
+				case 'gmail_smtp':
 					if ( class_exists( 'Brizy_Editor_Forms_GmailSmtpIntegration' ) ) {
 						$instance = Brizy_Editor_Forms_GmailSmtpIntegration::createFromJson( $json_obj );
 					}

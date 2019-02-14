@@ -96,29 +96,29 @@ class Brizy_Editor_Forms_SmtpIntegration extends Brizy_Editor_Forms_WordpressInt
 			$instance = new self( $json_obj->id );
 
 			if ( isset( $json_obj->emailTo ) ) {
-				$instance->setEmailTo( $json_obj->emailTo );
+				$instance->setEmailTo( trim( $json_obj->emailTo ) );
 			}
 
 			if ( isset( $json_obj->subject ) ) {
-				$instance->setSubject( $json_obj->subject );
+				$instance->setSubject( trim( $json_obj->subject ) );
 			}
 			if ( isset( $json_obj->host ) ) {
-				$instance->setHost( $json_obj->host );
+				$instance->setHost( trim( $json_obj->host ) );
 			}
 			if ( isset( $json_obj->port ) ) {
-				$instance->setPort( $json_obj->port );
+				$instance->setPort( trim( $json_obj->port ) );
 			}
 			if ( isset( $json_obj->authentication ) ) {
 				$instance->setAuthentication( $json_obj->authentication );
 			}
 			if ( isset( $json_obj->username ) ) {
-				$instance->setUsername( $json_obj->username );
+				$instance->setUsername( trim( $json_obj->username ) );
 			}
 			if ( isset( $json_obj->password ) ) {
-				$instance->setPassword( $json_obj->password );
+				$instance->setPassword( trim( $json_obj->password ) );
 			}
 			if ( isset( $json_obj->encryption ) ) {
-				$instance->setEncryption( $json_obj->encryption );
+				$instance->setEncryption( trim( $json_obj->encryption ) );
 			}
 		}
 

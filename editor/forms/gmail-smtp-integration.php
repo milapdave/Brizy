@@ -12,7 +12,7 @@ class Brizy_Editor_Forms_GmailSmtpIntegration extends Brizy_Editor_Forms_SmtpInt
 	 * Brizy_Editor_Forms_WordpressIntegration constructor.
 	 */
 	public function __construct() {
-		$this->id             = 'gmail-smtp';
+		$this->id             = 'gmail_smtp';
 		$this->host           = 'smtp.gmail.com';
 		$this->port           = 465;
 		$this->encryption     = 'ssl';
@@ -30,17 +30,17 @@ class Brizy_Editor_Forms_GmailSmtpIntegration extends Brizy_Editor_Forms_SmtpInt
 			$instance = new self( $json_obj->id );
 
 			if ( isset( $json_obj->emailTo ) ) {
-				$instance->setEmailTo( $json_obj->emailTo );
+				$instance->setEmailTo( trim( $json_obj->emailTo ) );
 			}
 
 			if ( isset( $json_obj->subject ) ) {
-				$instance->setSubject( $json_obj->subject );
+				$instance->setSubject( trim( $json_obj->subject ) );
 			}
 			if ( isset( $json_obj->username ) ) {
-				$instance->setUsername( $json_obj->username );
+				$instance->setUsername( trim( $json_obj->username ) );
 			}
 			if ( isset( $json_obj->password ) ) {
-				$instance->setPassword( $json_obj->password );
+				$instance->setPassword( trim( $json_obj->password ) );
 			}
 		}
 
