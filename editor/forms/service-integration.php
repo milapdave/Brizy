@@ -57,6 +57,26 @@ class Brizy_Editor_Forms_ServiceIntegration extends Brizy_Editor_Forms_AbstractI
 	 */
 	protected $usedFolder;
 
+
+	/**
+	 * @param $fields
+	 *
+	 * @return bool|mixed
+	 * @throws Exception
+	 */
+	public function handleSubmit( $fields ) {
+		/**
+		 * @var \BrizyForms\Service\Service $service ;
+		 */
+		$service = \BrizyForms\ServiceFactory::getInstance( $this->getId() );
+
+		if ( ! ( $service instanceof \BrizyForms\Service\Service ) ) {
+			$this->error( 400, "Invalid integration service" );
+		}
+
+		do_action( 'brizy_submit_form', $service, $fields, $this );
+	}
+
 	/**
 	 * @return array|mixed
 	 */

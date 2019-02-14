@@ -81,13 +81,12 @@ class Brizy_Editor_Forms_Api {
 			add_action( 'wp_ajax_' . self::AJAX_UPDATE_INTEGRATION, array( $this, 'updateIntegration' ) );
 			add_action( 'wp_ajax_' . self::AJAX_DELETE_INTEGRATION, array( $this, 'deleteIntegration' ) );
 
-			add_filter( 'brizy_form_submit_data', array( $this, 'handleFileTypeFields' ), -100, 2 );
+			add_filter( 'brizy_form_submit_data', array( $this, 'handleFileTypeFields' ), - 100, 2 );
 
 			add_action( 'wp_ajax_' . self::AJAX_VALIDATE_RECAPTCHA_ACCOUNT, array(
 				$this,
 				'validateRecaptchaAccount'
 			) );
-
 		}
 
 		add_action( 'wp_ajax_' . self::AJAX_SUBMIT_FORM, array( $this, 'submit_form' ) );
@@ -263,52 +262,11 @@ class Brizy_Editor_Forms_Api {
 
 
 			foreach ( $form->getIntegrations() as $integration ) {
-				if ( ! $integration->isCompleted() ) {
-					continue;
-				}
-
 				try {
-
-					if ( $integration instanceof Brizy_Editor_Forms_WordpressIntegration ) {
-
-						$headers   = array();
-						$headers[] = 'Content-type: text/html; charset=UTF-8';
-
-						$field_string = array();
-						foreach ( $fields as $field ) {
-							$field_string[] = "{$field->label}: " . esc_html( $field->value );
-						}
-
-						$email_body = implode( '<br>', $field_string );
-
-						$headers    = apply_filters( 'brizy_form_email_headers', $headers, $form, $fields );
-						$email_body = apply_filters( 'brizy_form_email_body', $email_body, $form, $fields );
-
-						if ( ! function_exists( 'wp_mail' ) ) {
-							throw new Exception( 'Please check your wordpress configuration.' );
-						}
-
-						$result = wp_mail(
-							$integration->getEmailTo(),
-							$integration->getSubject(),
-							$email_body,
-							$headers
-						);
-
-					} else {
-
-						/**
-						 * @var \BrizyForms\Service\Service $service ;
-						 */
-						$service = \BrizyForms\ServiceFactory::getInstance( $integration->getId() );
-
-						if ( ! ( $service instanceof \BrizyForms\Service\Service ) ) {
-							$this->error( 400, "Invalid integration service" );
-						}
-
-						do_action( 'brizy_submit_form', $service, $form, $fields, $integration );
+					if ( ! $integration->isCompleted() ) {
+						continue;
 					}
-
+					$integration->execute( $fields );
 				} catch ( Exception $e ) {
 					Brizy_Logger::instance()->exception( $e );
 					$this->error( 500, 'Member was not created.' );
@@ -373,6 +331,7 @@ class Brizy_Editor_Forms_Api {
 	}
 
 	public function createIntegration() {
+
 		$this->authorize();
 		$manager = new Brizy_Editor_Forms_FormManager( Brizy_Editor_Project::get() );
 
@@ -382,18 +341,23 @@ class Brizy_Editor_Forms_Api {
 			$this->error( 400, "Invalid form id" );
 		}
 
-		$integration = Brizy_Editor_Forms_AbstractIntegration::createInstanceFromJson( json_decode( file_get_contents( 'php://input' ) ) );
+		try {
+			$integration = Brizy_Editor_Forms_AbstractIntegration::createInstanceFromJson( json_decode( file_get_contents( 'php://input' ) ) );
 
-		if ( $form->getIntegration( $integration->getid() ) ) {
-			$this->error( 400, "This integration is already created" );
-		}
+			if ( $form->getIntegration( $integration->getid() ) ) {
+				$this->error( 400, "This integration is already created" );
+			}
 
-		$integration = apply_filters( 'brizy_create_integration', $integration, $form );
-		$integration = apply_filters( 'brizy_add_integration_accounts', $integration, $form );
+			$integration = apply_filters( 'brizy_create_integration', $integration, $form );
+			$integration = apply_filters( 'brizy_add_integration_accounts', $integration, $form );
 
-		if ( $form->addIntegration( $integration ) ) {
-			$manager->addForm( $form );
-			$this->success( $integration );
+			if ( $form->addIntegration( $integration ) ) {
+				$manager->addForm( $form );
+				$this->success( $integration );
+			}
+
+		} catch ( Exception $e ) {
+			$this->error( 400, $e->getMessage() );
 		}
 
 		$this->error( 500, "Unable to create integration" );
