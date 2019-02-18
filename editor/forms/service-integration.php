@@ -124,10 +124,14 @@ class Brizy_Editor_Forms_ServiceIntegration extends Brizy_Editor_Forms_AbstractI
 				}
 			}
 			if ( isset( $json_obj->lists ) ) {
-				foreach ( $json_obj->lists as $lists ) {
-					$instance->addList( Brizy_Editor_Forms_Group::createFromJson( $lists ) );
+				foreach ( $json_obj->lists as $list ) {
+					if( !$list instanceof Brizy_Editor_Forms_Group)
+						$instance->addList( Brizy_Editor_Forms_Group::createFromJson( $list ) );
+					else
+						$instance->addList($list);
 				}
 			}
+
 			if ( isset( $json_obj->usedAccount ) ) {
 				$instance->setUsedAccount( $json_obj->usedAccount );
 			}
