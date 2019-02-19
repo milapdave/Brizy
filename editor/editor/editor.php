@@ -560,7 +560,7 @@ class Brizy_Editor_Editor_Editor {
 			$config['applications']['form']['recaptcha']['siteKey'] = $accounts[0]->getSiteKey();
 		}
 
-		return array( $accounts, $config );
+		return $config;
 }
 
 	/**
