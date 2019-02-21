@@ -33,8 +33,19 @@ class Brizy_Editor_Forms_WordpressIntegration extends Brizy_Editor_Forms_Abstrac
 	 */
 	public function handleSubmit( $fields ) {
 
+		$recipients = explode( ',', $this->getEmailTo() );
+
 		$headers   = array();
 		$headers[] = 'Content-type: text/html; charset=UTF-8';
+
+		if ( count( $recipients ) > 1 ) {
+			foreach ( $recipients as $i => $recipient ) {
+				if ( $i == 0 ) {
+					continue;
+				}
+				$headers[] = 'Bcc: ' . trim($recipient);
+			}
+		}
 
 		$field_string = array();
 		foreach ( $fields as $field ) {
@@ -51,7 +62,7 @@ class Brizy_Editor_Forms_WordpressIntegration extends Brizy_Editor_Forms_Abstrac
 		}
 
 		return wp_mail(
-			$this->getEmailTo(),
+			$recipients[0],
 			$this->getSubject(),
 			$email_body,
 			$headers
