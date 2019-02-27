@@ -237,11 +237,13 @@ class Brizy_Editor_Editor_Editor {
 					'submitUrl' => add_query_arg( 'action', 'brizy_submit_form', set_url_scheme( admin_url( 'admin-ajax.php' ) ) )
 				),
 			),
-
-			'menuData' => $this->get_menu_data()
+			'server'          => array(
+				'maxUploadSize' => $this->fileUploadMaxSize()
+			),
+			'menuData'        => $this->get_menu_data()
 		);
 
-		$manager  = new Brizy_Editor_Accounts_ServiceAccountManager( Brizy_Editor_Project::get() );
+		$manager = new Brizy_Editor_Accounts_ServiceAccountManager( Brizy_Editor_Project::get() );
 
 		$config = $this->addRecaptchaAccounts( $manager, $config );
 
@@ -561,7 +563,7 @@ class Brizy_Editor_Editor_Editor {
 		}
 
 		return $config;
-}
+	}
 
 	/**
 	 * @param Brizy_Editor_Accounts_ServiceAccountManager $manager
@@ -579,5 +581,38 @@ class Brizy_Editor_Editor_Editor {
 		}
 
 		return $config;
-}
+	}
+
+
+	private function fileUploadMaxSize() {
+		static $max_size = - 1;
+
+		if ( $max_size < 0 ) {
+			// Start with post_max_size.
+			$post_max_size = $this->parseSize( ini_get( 'post_max_size' ) );
+			if ( $post_max_size > 0 ) {
+				$max_size = number_format( $post_max_size / 1000000, 2 );
+			}
+
+			// If upload_max_size is less, then reduce. Except if upload_max_size is
+			// zero, which indicates no limit.
+			$upload_max = $this->parseSize( ini_get( 'upload_max_filesize' ) );
+			if ( $upload_max > 0 && $upload_max < $max_size ) {
+				$max_size = number_format( $upload_max / 1000000, 2 );
+			}
+		}
+
+		return $max_size;
+	}
+
+	private function parseSize( $size ) {
+		$unit = preg_replace( '/[^bkmgtpezy]/i', '', $size ); // Remove the non-unit characters from the size.
+		$size = preg_replace( '/[^0-9\.]/', '', $size ); // Remove the non-numeric characters from the size.
+		if ( $unit ) {
+			// Find the position of the unit in the ordered string which is the power of magnitude to multiply a kilobyte by.
+			return round( $size * pow( 1024, stripos( 'bkmgtpezy', $unit[0] ) ) );
+		} else {
+			return round( $size );
+		}
+	}
 }

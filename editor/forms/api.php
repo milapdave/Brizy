@@ -220,7 +220,6 @@ class Brizy_Editor_Forms_Api {
 			}
 
 			// validtate recaptha response if exists
-
 			$accountManager    = new Brizy_Editor_Accounts_ServiceAccountManager( Brizy_Editor_Project::get() );
 			$recaptchaAccounts = $accountManager->getAccountsByGroup( Brizy_Editor_Accounts_AbstractAccount::RECAPTCHA_GROUP );
 
@@ -240,11 +239,12 @@ class Brizy_Editor_Forms_Api {
 				$recaptchaAccount = $recaptchaAccounts[0];
 
 				$http     = new WP_Http();
+				$array    = array(
+					'secret'   => $recaptchaAccount->getSecretKey(),
+					'response' => $recaptchaField->value
+				);
 				$response = $http->post( 'https://www.google.com/recaptcha/api/siteverify', array(
-						'body' => array(
-							'secret'   => $recaptchaAccount->get( 'secretKey' ),
-							'response' => $recaptchaField->value
-						)
+						'body' => $array
 					)
 				);
 
@@ -277,7 +277,7 @@ class Brizy_Editor_Forms_Api {
 
 		} catch ( Exception $exception ) {
 			Brizy_Logger::instance()->exception( $exception );
-			$this->error( $exception->getCode(), $exception->getMessage() );
+			$this->error( 400, $exception->getMessage() );
 			exit;
 		}
 	}
@@ -286,44 +286,54 @@ class Brizy_Editor_Forms_Api {
 
 		foreach ( $fields as $field ) {
 			if ( $field->type == 'FileUpload' ) {
-				$uFile           = $_FILES[ $field->name ];
-				$uploadOverrides = array( 'test_form' => false );
+				$uFile = $_FILES[ $field->name ];
 
-				$file = wp_handle_upload( $uFile, $uploadOverrides );
+				foreach ( $_FILES[ $field->name ]['name'] as $index => $value ) {
+					$uFile = array(
+						'name'     => $_FILES[ $field->name ]['name'][ $index ],
+						'type'     => $_FILES[ $field->name ]['type'][ $index ],
+						'tmp_name' => $_FILES[ $field->name ]['tmp_name'][ $index ],
+						'error'    => $_FILES[ $field->name ]['error'][ $index ],
+						'size'     => $_FILES[ $field->name ]['size'][ $index ]
+					);
 
-				if ( ! $file || isset( $file['error'] ) ) {
-					Brizy_Logger::instance()->error( 'Failed to handle upload', $fields );
-					throw new Exception( 'Failed to handle upload' );
+					$uploadOverrides = array( 'test_form' => false );
+
+					$file = wp_handle_upload( $uFile, $uploadOverrides );
+
+					if ( ! $file || isset( $file['error'] ) ) {
+						Brizy_Logger::instance()->error( 'Failed to handle upload', $fields );
+						throw new Exception( 'Failed to handle upload' );
+					}
+
+					// create attachment
+					$wp_upload_dir = wp_upload_dir();
+					$attachment    = array(
+						'guid'           => $wp_upload_dir['url'] . '/' . basename( $file['file'] ),
+						'post_mime_type' => $file['type'],
+						'post_title'     => preg_replace( '/\.[^.]+$/', '', basename( $file['file'] ) ),
+						'post_content'   => '',
+						'post_status'    => 'inherit'
+					);
+
+					$attach_id = wp_insert_attachment( $attachment, $file['file'] );
+
+					if ( $attach_id instanceof WP_Error ) {
+						Brizy_Logger::instance()->error( 'Failed to handle upload', array( $attach_id ) );
+						throw new Exception( 'Failed to handle upload' );
+					}
+
+					update_post_meta( $attach_id, 'brizy-form-upload', 1 );
+
+					// Make sure that this file is included, as wp_generate_attachment_metadata() depends on it.
+					require_once( ABSPATH . 'wp-admin/includes/image.php' );
+
+					// Generate the metadata for the attachment, and update the database record.
+					$attach_data = wp_generate_attachment_metadata( $attach_id, $file['file'] );
+					wp_update_attachment_metadata( $attach_id, $attach_data );
+
+					$field->value = $file['url'];
 				}
-
-				// create attachment
-				$wp_upload_dir = wp_upload_dir();
-				$attachment    = array(
-					'guid'           => $wp_upload_dir['url'] . '/' . basename( $file['file'] ),
-					'post_mime_type' => $file['type'],
-					'post_title'     => preg_replace( '/\.[^.]+$/', '', basename( $file['file'] ) ),
-					'post_content'   => '',
-					'post_status'    => 'inherit'
-				);
-
-
-				$attach_id = wp_insert_attachment( $attachment, $file['file'] );
-
-				if ( $attach_id instanceof WP_Error ) {
-					Brizy_Logger::instance()->error( 'Failed to handle upload', $attach_id );
-					throw new Exception( 'Failed to handle upload' );
-				}
-
-				update_post_meta( $attach_id, 'brizy-form-upload', 1 );
-
-				// Make sure that this file is included, as wp_generate_attachment_metadata() depends on it.
-				require_once( ABSPATH . 'wp-admin/includes/image.php' );
-
-				// Generate the metadata for the attachment, and update the database record.
-				$attach_data = wp_generate_attachment_metadata( $attach_id, $file['file'] );
-				wp_update_attachment_metadata( $attach_id, $attach_data );
-
-				$field->value = $file['url'];
 			}
 		}
 
