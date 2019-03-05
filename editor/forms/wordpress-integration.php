@@ -26,12 +26,13 @@ class Brizy_Editor_Forms_WordpressIntegration extends Brizy_Editor_Forms_Abstrac
 	}
 
 	/**
+	 * @param Brizy_Editor_Forms_Form $form
 	 * @param $fields
 	 *
 	 * @return bool|mixed
 	 * @throws Exception
 	 */
-	public function handleSubmit( $fields ) {
+	public function handleSubmit( Brizy_Editor_Forms_Form $form, $fields ) {
 
 		$recipients = explode( ',', $this->getEmailTo() );
 
@@ -43,7 +44,7 @@ class Brizy_Editor_Forms_WordpressIntegration extends Brizy_Editor_Forms_Abstrac
 				if ( $i == 0 ) {
 					continue;
 				}
-				$headers[] = 'Bcc: ' . trim($recipient);
+				$headers[] = 'Bcc: ' . trim( $recipient );
 			}
 		}
 
@@ -52,10 +53,10 @@ class Brizy_Editor_Forms_WordpressIntegration extends Brizy_Editor_Forms_Abstrac
 			$field_string[] = "{$field->label}: " . esc_html( $field->value );
 		}
 
-		$email_body = implode( '<br>', $field_string );
+		$email_body = $form->getEmailTemplateContent( $fields );
 
-		$headers    = apply_filters( 'brizy_form_email_headers', $headers, $fields );
-		$email_body = apply_filters( 'brizy_form_email_body', $email_body, $fields );
+		$headers    = apply_filters( 'brizy_form_email_headers', $headers, $fields, $form );
+		$email_body = apply_filters( 'brizy_form_email_body', $email_body, $fields, $form );
 
 		if ( ! function_exists( 'wp_mail' ) ) {
 			throw new Exception( 'Please check your wordpress configuration.' );

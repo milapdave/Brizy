@@ -46,15 +46,16 @@ class Brizy_Editor_Forms_SmtpIntegration extends Brizy_Editor_Forms_WordpressInt
 	}
 
 	/**
+	 * @param Brizy_Editor_Forms_Form $form
 	 * @param $fields
 	 *
 	 * @return bool|mixed
 	 * @throws Exception
 	 */
-	public function handleSubmit( $fields ) {
+	public function handleSubmit( Brizy_Editor_Forms_Form $form, $fields ) {
 		add_action( 'phpmailer_init', array( $this, 'decoratePhpMailer' ) );
 
-		return parent::handleSubmit( $fields );
+		return parent::handleSubmit( $form, $fields );
 	}
 
 	public function decoratePhpMailer( $phpmailer ) {

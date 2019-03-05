@@ -15,6 +15,7 @@ class Brizy_Editor_Forms_Api {
 
 	const AJAX_GET_FORM = 'brizy_get_form';
 	const AJAX_CREATE_FORM = 'brizy_create_form';
+	const AJAX_UPDATE_FORM = 'brizy_update_form';
 	const AJAX_DELETE_FORM = 'brizy_delete_form';
 	const AJAX_SUBMIT_FORM = 'brizy_submit_form';
 
@@ -74,6 +75,7 @@ class Brizy_Editor_Forms_Api {
 		if ( Brizy_Editor::is_user_allowed() ) {
 			add_action( 'wp_ajax_' . self::AJAX_GET_FORM, array( $this, 'get_form' ) );
 			add_action( 'wp_ajax_' . self::AJAX_CREATE_FORM, array( $this, 'create_form' ) );
+			add_action( 'wp_ajax_' . self::AJAX_UPDATE_FORM, array( $this, 'update_form' ) );
 			add_action( 'wp_ajax_' . self::AJAX_DELETE_FORM, array( $this, 'delete_form' ) );
 
 			add_action( 'wp_ajax_' . self::AJAX_CREATE_INTEGRATION, array( $this, 'createIntegration' ) );
@@ -187,6 +189,45 @@ class Brizy_Editor_Forms_Api {
 		}
 	}
 
+	public function update_form() {
+		try {
+			$this->authorize();
+
+			$manager = new Brizy_Editor_Forms_FormManager( Brizy_Editor_Project::get() );
+
+			$form_json = json_decode( file_get_contents( 'php://input' ) );
+
+			if ( ! $form_json ) {
+				$this->error( 400, 'Invalid json object provided' );
+			}
+
+			if ( !isset( $_REQUEST['formId'] ) ) {
+				$this->error( 400, 'Invalid form id provided' );
+			}
+
+			$form = $manager->getForm( $_REQUEST['formId'] );
+
+			if ( ! $form ) {
+				$this->error( 404, 'Form not found' );
+			}
+
+			$instance          = Brizy_Editor_Forms_Form::updateFromJson( $form, $form_json );
+			$validation_result = $instance->validate();
+
+			if ( $validation_result === true ) {
+				$manager->addForm( $instance );
+				$this->success( $instance, 200 );
+			}
+
+			$this->error( 400, $validation_result );
+
+		} catch ( Exception $exception ) {
+			Brizy_Logger::instance()->exception( $exception );
+			$this->error( $exception->getCode(), $exception->getMessage() );
+			exit;
+		}
+	}
+
 	public function delete_form() {
 		try {
 			$this->authorize();
@@ -266,7 +307,7 @@ class Brizy_Editor_Forms_Api {
 					if ( ! $integration->isCompleted() ) {
 						continue;
 					}
-					$integration->handleSubmit( $fields );
+					$integration->handleSubmit( $form, $fields );
 				} catch ( Exception $e ) {
 					Brizy_Logger::instance()->exception( $e );
 					$this->error( 500, 'Member was not created.' );

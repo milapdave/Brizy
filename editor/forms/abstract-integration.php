@@ -29,11 +29,12 @@ abstract class Brizy_Editor_Forms_AbstractIntegration extends Brizy_Admin_Serial
 	}
 
 	/**
+	 * @param Brizy_Editor_Forms_Form $form
 	 * @param $fields
 	 *
 	 * @return mixed
 	 */
-	abstract public function handleSubmit($fields);
+	abstract public function handleSubmit( Brizy_Editor_Forms_Form $form, $fields );
 
 	/**
 	 * @return bool
@@ -108,6 +109,7 @@ abstract class Brizy_Editor_Forms_AbstractIntegration extends Brizy_Admin_Serial
 				$instance->setCompleted( $json_obj->completed );
 			}
 		}
+
 		return $instance;
 	}
 
