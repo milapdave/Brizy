@@ -8,7 +8,7 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 	 * @return mixed
 	 */
 	public function getVersion() {
-		return '1.0.80';
+		return '1.0.69';
 	}
 
 	/**
@@ -20,7 +20,9 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 		$project = Brizy_Editor_Project::get();
 		$globals = $project->getDecodedGlobals();
 
-		if ( ! $globals || ! isset( $globals->project ) ) {
+		if ( ! $globals || (isset( $globals->project ) && empty( $globals->project ) ) ) {
+			$project->setGlobals( base64_encode( json_encode ( (object) array() ) ) );
+			$project->save();
 			return;
 		}
 
@@ -44,7 +46,7 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 		}
 
 		if ( $globals->project->savedBlocks ) {
-			foreach ( get_object_vars( $globals->project->savedBlocks ) as $uid => $data ) {
+			foreach ( $globals->project->savedBlocks as $data ) {
 
 				$post = wp_insert_post( array(
 					'post_status' => 'publish',
@@ -52,7 +54,7 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 				) );
 
 				if ( $post ) {
-					$brizyPost = Brizy_Editor_Block::get( $post, $uid );
+					$brizyPost = Brizy_Editor_Block::get( $post );
 					$brizyPost->set_editor_data( json_encode( $data ) );
 					$brizyPost->set_uses_editor( true );
 					$brizyPost->set_needs_compile( true );
@@ -66,7 +68,7 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 		unset($globals->project->globalBlocks);
 		unset($globals->project->savedBlocks);
 		$globals = $globals->project;
-		$project->setGlobals( $globals );
+		$project->setGlobals( base64_encode( json_encode ( $globals ) ) );
 		$project->save();
 	}
 }
