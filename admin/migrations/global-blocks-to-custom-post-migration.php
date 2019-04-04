@@ -17,16 +17,18 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 	 */
 	public function execute() {
 
-		$project = Brizy_Editor_Project::get();
-		$globals = $project->getDecodedGlobals();
+		$project              = Brizy_Editor_Project::get();
+		$postMigrationStorage = new Brizy_Admin_Migrations_PostStorage( $project->getWpPost()->ID );
+		$globals              = $project->getDecodedGlobals();
 
-		if ( ! $globals || (isset( $globals->project ) && empty( $globals->project ) ) ) {
-			$project->setGlobals( base64_encode( json_encode ( (object) array() ) ) );
+		if ( ! $globals || ( isset( $globals->project ) && empty( $globals->project ) ) ) {
+			$project->setGlobals( base64_encode( json_encode( (object) array() ) ) );
 			$project->save();
+			$postMigrationStorage->addMigration($this)->save();
 			return;
 		}
 
-		if ( $globals->project->globalBlocks ) {
+		if ( isset( $globals->project->globalBlocks ) ) {
 			foreach ( get_object_vars( $globals->project->globalBlocks ) as $uid => $data ) {
 
 				$post = wp_insert_post( array(
@@ -45,7 +47,7 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 			}
 		}
 
-		if ( $globals->project->savedBlocks ) {
+		if ( isset( $globals->project->savedBlocks ) ) {
 			foreach ( $globals->project->savedBlocks as $data ) {
 
 				$post = wp_insert_post( array(
@@ -65,10 +67,11 @@ class Brizy_Admin_Migrations_GlobalBlocksToCustomPostMigration implements Brizy_
 
 		update_post_meta( $project->getWpPost()->ID, 'brizy-bk-' . get_class( $this ) . '-' . $this->getVersion(), $globals );
 
-		unset($globals->project->globalBlocks);
-		unset($globals->project->savedBlocks);
-		$globals = $globals->project;
-		$project->setGlobals( base64_encode( json_encode ( $globals ) ) );
+		unset( $globals->project->globalBlocks );
+		unset( $globals->project->savedBlocks );
+		
+		$project->setGlobals( base64_encode( json_encode( $globals->project ) ) );
 		$project->save();
+		$postMigrationStorage->addMigration($this)->save();
 	}
 }
